@@ -14,8 +14,9 @@ Run the following commands:
 cd ./backend
 pip install fastapi uvicorn pydantic requests
 python -m uvicorn main:app
-#Then
+###################################
+###  Then
 *Click index.html in the Test folder
 *Enter a URL in the input field
 *Click the Analyze button
-*Check the results
+*Check the result
