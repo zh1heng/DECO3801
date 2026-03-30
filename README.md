@@ -23,9 +23,9 @@ To ensure engineering reliability and project delivery, we will adopt a **"Fallb
      * **Understandable (WCAG 3.1 Readable)**: Use basic Natural Language Processing (NLP) to calculate average sentence complexity and baseline reading difficulty vocabulary.
      * **Operable (WCAG 2.4 Navigable)**: Check for non-sequential jumps in heading levels (Heading Jumps) that mapping to cognitive gaps, analyze interactive link density, and contextual navigation structures.
 3. **Structured Datasets and Initial Training**:
-   * Concatenate the extracted structural features into a 1D feature vector.
-   * Manually label cognitive load scores for dozens to hundreds of common websites.
-   * Train a Random Forest **Base Model** (v1 baseline) using `sklearn.ensemble.RandomForestRegressor` capable of handling foundational layouts.
+   * **Data Sourcing (Common Crawl)**: The foundational dataset is derived from the massive, open-source web archive [Common Crawl](https://commoncrawl.org/). By downloading and processing its WARC (Web ARChive) data dumps, we efficiently acquire a highly diverse and representative sample of real-world HTML documents across the global internet.
+   * **Data Processing Pipeline**: The raw HTML strings parsed from the Common Crawl archives are fed into our `BeautifulSoup` cleaning pipeline to strip irrelevant scripts and styles. The purified DOM trees are then processed to extract the WCAG structural metrics, concatenating them into a 1D feature vector matrix.
+   * **Labeling & Training**: A targeted subset of these websites is labeled for cognitive load scores. We then train a Random Forest **Base Model** (v1 baseline) using `sklearn.ensemble.RandomForestRegressor` to map these structural features to cognitive accessibility levels.
 4. **Integration Testing**:
    * Enable the FastAPI backend to execute the scraping and scoring process, returning a JSON response containing the total score and evaluation suggestions to the frontend `DashboardPage.tsx`.
 
@@ -46,3 +46,28 @@ To ensure engineering reliability and project delivery, we will adopt a **"Fallb
 4. **Feature Importance Analysis and Smart Suggestions**:
    * Utilize the built-in **Feature Importance** evaluation of the multi-dimensional model outputs to provide "white-box" interpretations of low scores (e.g., determining if the issue lies in excessive colors or dense, long paragraphs).
    * Package these dynamically analyzed "root causes" into actionable suggestions to dynamically render the frontend radar chart and optimization panel.
+
+---
+
+###  Project Structure
+
+To maintain clarity without complicating the development workflow, the project adopts an "Un-isolated Frontend, Encapsulated Backend" pattern. The frontend remains in the root folder, while the Python backend logic is strictly separated inside the `backend/` directory using a standard 5-layer architecture.
+
+```text
+DECO3801/
+├── src/                # React Vite Frontend Source Code
+│   ├── components/     # UI Components (LandingPage, DashboardPage, etc.)
+│   ├── App.tsx         # Main Frontend Logic & View Routing
+│   ├── main.tsx        # React Entry Point
+│   └── index.css       # Tailwind & Global Styles
+├── backend/            # Python FastAPI Backend
+│   ├── api/            # API Route Handlers & Endpoints
+│   ├── service/        # Core Business Logic (Scraping, Feature Extraction, Model Inference)
+│   ├── repository/     # Data Access Layer & Database Integrations
+│   ├── schema/         # Pydantic Models for Input/Output Validation
+│   ├── model/          # Database ORM Models
+│   └── HTML test.py    # Original Prototype Script for ML Analysis
+├── index.html          # Vite HTML Templates
+├── package.json        # NPM Dependencies & Scripts
+└── vite.config.ts      # Vite Bundling Configuration
+```
