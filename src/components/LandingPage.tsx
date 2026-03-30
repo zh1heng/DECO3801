@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-export default function LandingPage({ onCheck }: { onCheck: () => void }) {
+export default function LandingPage({ onCheck }: { onCheck: (url: string) => void }) {
+  const [url, setUrl] = useState('');
   return (
     <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-background-light font-display text-slate-900">
       <div className="layout-container flex h-full grow flex-col">
@@ -40,12 +41,13 @@ export default function LandingPage({ onCheck }: { onCheck: () => void }) {
               <div className="flex flex-col md:flex-row gap-3 p-2 bg-white rounded-xl shadow-xl border border-primary/10">
                 <div className="flex flex-1 items-center px-4 gap-3">
                   <span className="material-symbols-outlined text-slate-400">link</span>
-                  <input className="w-full bg-transparent border-none focus:ring-0 text-slate-900 placeholder:text-slate-400 py-3 outline-none" placeholder="Enter website URL (e.g. https://example.com)" type="text" />
+                  <input value={url} onChange={(e) => setUrl(e.target.value)} className="w-full bg-transparent border-none focus:ring-0 text-slate-900 placeholder:text-slate-400 py-3 outline-none" placeholder="Enter website URL (e.g. https://example.com)" type="text" />
                 </div>
-                <button onClick={onCheck} className="bg-gradient-to-r from-primary to-blue-400 hover:brightness-110 text-white font-bold px-8 py-3 rounded-lg transition-all shadow-lg shadow-primary/30 flex items-center justify-center gap-2 cursor-pointer">
+                <button onClick={() => url ? onCheck(url) : alert('Please enter a URL')} className="bg-gradient-to-r from-primary to-blue-400 hover:brightness-110 text-white font-bold px-8 py-3 rounded-lg transition-all shadow-lg shadow-primary/30 flex items-center justify-center gap-2 cursor-pointer">
                   <span>Check Website</span>
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
                 </button>
+
               </div>
             </div>
           </section>

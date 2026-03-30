@@ -1,6 +1,21 @@
 import React from 'react';
+import { AnalyzeResult } from '../App';
 
-export default function DashboardPage({ onRescan }: { onRescan: () => void }) {
+export default function DashboardPage({ 
+  onRescan, 
+  analyzedUrl, 
+  result 
+}: { 
+  onRescan: () => void; 
+  analyzedUrl: string; 
+  result: AnalyzeResult | null;
+}) {
+  const totalScore = result?.total_score ?? 5;
+  const vhScore = result?.vh_score ?? 5;
+  const navScore = result?.nav_score ?? 5;
+  const langScore = result?.lang_score ?? 5;
+  const layoutScore = 5;
+  const animationScore = 5;
   return (
     <div className="relative flex min-h-screen flex-col bg-background-light text-slate-900 font-display">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-primary/10 bg-white/80 px-6 py-4 backdrop-blur-md lg:px-10">
@@ -29,7 +44,7 @@ export default function DashboardPage({ onRescan }: { onRescan: () => void }) {
             <h1 className="text-3xl font-black tracking-tight lg:text-4xl">CogniEase Dashboard</h1>
             <div className="mt-1 flex items-center gap-2 text-slate-500">
               <span className="material-symbols-outlined text-sm">language</span>
-              <p className="text-sm font-medium">Website analysed: <span className="text-primary underline decoration-primary/30 underline-offset-4">example.com</span></p>
+              <p className="text-sm font-medium">Website analysed: <span className="text-primary underline decoration-primary/30 underline-offset-4">{analyzedUrl || 'example.com'}</span></p>
             </div>
           </div>
           <div className="flex gap-3">
@@ -50,7 +65,7 @@ export default function DashboardPage({ onRescan }: { onRescan: () => void }) {
               <div className="relative flex h-40 w-40 items-center justify-center rounded-full border-8 border-yellow-400/20">
                 <div className="absolute inset-0 rounded-full border-8 border-yellow-400 border-t-transparent" style={{ transform: 'rotate(45deg)' }}></div>
                 <div className="text-center">
-                  <span className="text-4xl font-black">72<span className="text-xl text-slate-400">/100</span></span>
+                  <span className="text-4xl font-black">{totalScore}<span className="text-xl text-slate-400">/100</span></span>
                 </div>
               </div>
               <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-yellow-100 px-4 py-1 text-sm font-bold text-yellow-700">
@@ -73,7 +88,7 @@ export default function DashboardPage({ onRescan }: { onRescan: () => void }) {
               </div>
               <svg className="relative z-10 h-full w-full max-w-[400px]" preserveAspectRatio="xMidYMid meet" viewBox="0 0 100 100">
                 {(() => {
-                  const metrics = [88, 78, 72, 65, 45];
+                  const metrics = [vhScore, navScore, layoutScore, langScore, animationScore];
                   const maxRadius = 37.5;
                   const center = 50;
                   const points = metrics.map((score, i) => {
@@ -97,11 +112,11 @@ export default function DashboardPage({ onRescan }: { onRescan: () => void }) {
                 })()}
               </svg>
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                <span className="absolute top-2 text-[10px] font-bold text-slate-400 uppercase">Visual Hierarchy (88)</span>
-                <span className="absolute top-1/4 right-0 text-[10px] font-bold text-slate-400 uppercase">Nav Depth (78)</span>
-                <span className="absolute bottom-1/4 right-4 text-[10px] font-bold text-slate-400 uppercase">Layout Density (72)</span>
-                <span className="absolute bottom-1/4 left-4 text-[10px] font-bold text-slate-400 uppercase">Language (65)</span>
-                <span className="absolute top-1/4 left-0 text-[10px] font-bold text-slate-400 uppercase">Animation (45)</span>
+                <span className="absolute top-2 text-[10px] font-bold text-slate-400 uppercase">Visual Hierarchy ({vhScore})</span>
+                <span className="absolute top-1/4 right-0 text-[10px] font-bold text-slate-400 uppercase">Nav Depth ({navScore})</span>
+                <span className="absolute bottom-1/4 right-4 text-[10px] font-bold text-slate-400 uppercase">Layout Density ({layoutScore})</span>
+                <span className="absolute bottom-1/4 left-4 text-[10px] font-bold text-slate-400 uppercase">Language ({langScore})</span>
+                <span className="absolute top-1/4 left-0 text-[10px] font-bold text-slate-400 uppercase">Animation ({animationScore})</span>
               </div>
             </div>
           </div>
@@ -113,35 +128,35 @@ export default function DashboardPage({ onRescan }: { onRescan: () => void }) {
                   <div className="h-2 w-2 rounded-full bg-green-500"></div>
                   <span className="text-sm font-medium">Visual Hierarchy</span>
                 </div>
-                <span className="text-sm font-bold">88%</span>
+                <span className="text-sm font-bold">{vhScore}</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                   <span className="text-sm font-medium">Navigation Depth</span>
                 </div>
-                <span className="text-sm font-bold">78%</span>
+                <span className="text-sm font-bold">{navScore}</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
                   <span className="text-sm font-medium">Layout Density</span>
                 </div>
-                <span className="text-sm font-bold">72%</span>
+                <span className="text-sm font-bold">{layoutScore}</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full bg-orange-500"></div>
                   <span className="text-sm font-medium">Language Simplicity</span>
                 </div>
-                <span className="text-sm font-bold">65%</span>
+                <span className="text-sm font-bold">{langScore}</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full bg-red-500"></div>
                   <span className="text-sm font-medium">Animation Distraction</span>
                 </div>
-                <span className="text-sm font-bold text-red-500">45%</span>
+                <span className="text-sm font-bold text-red-500">{animationScore}</span>
               </div>
             </div>
           </div>
@@ -174,30 +189,21 @@ export default function DashboardPage({ onRescan }: { onRescan: () => void }) {
           <div className="col-span-1 rounded-xl border border-primary/10 bg-white p-6 shadow-sm lg:col-span-4">
             <h3 className="mb-6 text-lg font-bold text-slate-700">Smart Suggestions</h3>
             <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
-                  <span className="material-symbols-outlined text-sm font-bold">check</span>
-                </div>
-                <p className="text-sm text-slate-600">Implement a "Reduced Motion" toggle for the landing hero section.</p>
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
-                  <span className="material-symbols-outlined text-sm font-bold">check</span>
-                </div>
-                <p className="text-sm text-slate-600">Add a glossary for industry-specific terms found on the 'Process' page.</p>
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
-                  <span className="material-symbols-outlined text-sm font-bold">check</span>
-                </div>
-                <p className="text-sm text-slate-600">Increase line-height to 1.6 for all body copy to improve readability.</p>
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
-                  <span className="material-symbols-outlined text-sm font-bold">check</span>
-                </div>
-                <p className="text-sm text-slate-600">Group related navigation items into nested dropdowns to reduce clutter.</p>
-              </li>
+              {result?.reasons?.length ? result.reasons.map((reason, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
+                    <span className="material-symbols-outlined text-sm font-bold">priority_high</span>
+                  </div>
+                  <p className="text-sm text-slate-600">{reason}</p>
+                </li>
+              )) : (
+                <li className="flex items-start gap-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
+                    <span className="material-symbols-outlined text-sm font-bold">check</span>
+                  </div>
+                  <p className="text-sm text-slate-600">No major issues detected by current rules.</p>
+                </li>
+              )}
             </ul>
             <button className="mt-8 w-full rounded-lg bg-primary/10 py-3 text-sm font-bold text-primary hover:bg-primary transition-colors hover:text-white cursor-pointer">
               View Detailed Report

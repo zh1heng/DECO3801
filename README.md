@@ -26,8 +26,11 @@ To ensure engineering reliability and project delivery, we will adopt a **"Fallb
    * **Data Sourcing (Common Crawl)**: The foundational dataset is derived from the massive, open-source web archive [Common Crawl](https://commoncrawl.org/). By downloading and processing its WARC (Web ARChive) data dumps, we efficiently acquire a highly diverse and representative sample of real-world HTML documents across the global internet.
    * **Data Processing Pipeline**: The raw HTML strings parsed from the Common Crawl archives are fed into our `BeautifulSoup` cleaning pipeline to strip irrelevant scripts and styles. The purified DOM trees are then processed to extract the WCAG structural metrics, concatenating them into a 1D feature vector matrix.
    * **Labeling & Training**: A targeted subset of these websites is labeled for cognitive load scores. We then train a Random Forest **Base Model** (v1 baseline) using `sklearn.ensemble.RandomForestRegressor` to map these structural features to cognitive accessibility levels.
-4. **Integration Testing**:
+4. **Integration Testing & Data Calling Flow**:
    * Enable the FastAPI backend to execute the scraping and scoring process, returning a JSON response containing the total score and evaluation suggestions to the frontend `DashboardPage.tsx`.
+   * **Frontend API Calling Location**: The API request to the backend is made in [`src/App.tsx`](src/App.tsx) inside the `handleCheckWebsite(url)` function. It parses the JSON representation of the scores and passes them to `DashboardPage.tsx` for visual rendering.
+   * **Frontend Output Location**: The resolved metrics (`vh_score`, `nav_score`, `lang_score`, `total_score`, and `reasons`) are statically bound and rendered inside [`src/components/DashboardPage.tsx`](src/components/DashboardPage.tsx) across the Radar Chart and Score details. (Missing scores will use a fallback value of 5).
+   * **Backend Output Location**: The actual integration endpoint where `total_score` and `reasons` (along with sub-scores) are compiled into JSON is located at [`backend/api/analyze.py`](backend/api/analyze.py). It acts as the routing layer wrapping the original logic of `backend/html_test.py`.
 
 #### Milestone 2: v2.0 Multi-modal (HTML + Computer Vision Screenshots) Advanced Edition
 *Building upon the successful and robust v1.0, this phase advances user experience and accuracy. It specifically targets the technical challenge of "cognitive burden caused by chaotic styling and layouts."*
