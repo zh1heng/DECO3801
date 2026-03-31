@@ -74,3 +74,99 @@ DECO3801/
 ├── package.json        # NPM Dependencies & Scripts
 └── vite.config.ts      # Vite Bundling Configuration
 ```
+## Temporary Data Evaluation Criteria
+
+To establish a functional baseline model (v1.0), this project adopts a **rule-based scoring system** to approximate cognitive accessibility before integrating machine learning models.
+
+The current evaluation framework transforms webpage features into quantifiable metrics across three dimensions: **Visual Hierarchy**, **Navigation Complexity**, and **Language Simplicity**. These metrics are computed from HTML structure and textual content.
+
+---
+
+### 1. Language Complexity (WCAG 3.1 Readable)
+
+We estimate reading difficulty using three statistical indicators:
+
+- **Average Sentence Length**
+  
+  AvgSentenceLength = WordCount / SentenceCount
+
+- **Average Word Length**
+  
+  AvgWordLength = TotalCharacterCount / WordCount
+
+- **Average Paragraph Length**
+  
+  AvgParagraphLength = WordCount / ParagraphCount
+
+#### Scoring Rules:
+- +10 if AvgSentenceLength > 20  
+- +10 if AvgSentenceLength > 30  
+- +8 if AvgWordLength > 5  
+- +7 if AvgParagraphLength > 80  
+
+Maximum Language Score: **35**
+
+---
+
+### 2. Visual Hierarchy (WCAG Structure)
+
+We evaluate the structural clarity of headings:
+
+- **Heading Jump Detection**
+
+  HeadingJump = number of times (h_i - h_{i-1} > 1)
+
+#### Scoring Rules:
+- +20 if no `<h1>` is present  
+- +15 if more than 2 `<h1>` tags exist  
+- +25 if no headings are detected  
+- +5 × HeadingJump (capped at 20)
+
+Maximum Visual Hierarchy Score: **40**
+
+---
+
+### 3. Navigation Complexity (WCAG Navigable)
+
+We analyze navigation structure based on link density and orientation cues:
+
+- **Navigation Link Count**
+
+  NavLinks = number of links inside `<nav>`
+
+#### Scoring Rules:
+- +10 if NavLinks > 10  
+- +10 if NavLinks > 20  
+- +5 if no breadcrumb navigation is detected  
+
+Maximum Navigation Score: **25**
+
+---
+
+### 4. Final Cognitive Complexity Score
+
+The total cognitive load score is computed as:
+
+TotalScore = VisualHierarchyScore + NavigationScore + LanguageScore
+
+The final score is bounded within the range [0, 100].
+
+---
+
+### 5. Complexity Level Classification
+
+- **Low Complexity**: Score < 34  
+- **Medium Complexity**: 34 ≤ Score < 67  
+- **High Complexity**: Score ≥ 67  
+
+---
+
+### 6. Notes on Current Approach
+
+This rule-based system serves as a **temporary evaluation standard** for:
+
+- Rapid prototyping and system integration  
+- Providing interpretable baseline results  
+- Supporting initial frontend-backend data flow  
+
+In future iterations (v2.0), this heuristic model will be replaced by a **machine learning model (Random Forest)** trained on labeled cognitive accessibility datasets to improve accuracy and adaptability.
