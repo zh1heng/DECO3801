@@ -8,5 +8,6 @@ class AnalyzeResponse(BaseModel):
     vh_score: float
     nav_score: float
     lang_score: float
+    visual_score: float
     total_score: float
     reasons: List[str]

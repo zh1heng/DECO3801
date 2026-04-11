@@ -74,6 +74,36 @@ DECO3801/
 ├── package.json        # NPM Dependencies & Scripts
 └── vite.config.ts      # Vite Bundling Configuration
 ```
+## How to Run & Test
+
+Follow the steps below to run and verify the system using the localized testing environment:
+
+### 1. Install Dependencies & Start the Backend Service
+
+Open a terminal at the project root (`DECO3801` folder) and activate your Python environment. You need to install the required Python packages and the Playwright browser binaries.
+
+```bash
+# Install backend dependencies
+pip install fastapi uvicorn pydantic requests beautifulsoup4 playwright
+
+# Install Playwright browser binaries (required for web scraping)
+playwright install
+
+# Start the FastAPI backend service
+python -m uvicorn backend.main:app --reload --port 8000
+```
+
+### 2. Run the Local Testing Frontend
+
+* Navigate to the `Test` folder in your file explorer.
+* Open `index.html` in any modern web browser.
+* Enter a target URL in the input field.
+* Click the **Analyze** button.
+* Wait patiently for the progress bar to finish (the backend runs Playwright headlessly in the background to render and analyze the full page, which usually takes 10-15 seconds).
+* View the final cognitive accessibility report and score breakdown!
+
+---
+
 ## Temporary Data Evaluation Criteria
 
 To establish a functional baseline model (v1.0), this project adopts a **rule-based scoring system** to approximate cognitive accessibility before integrating machine learning models.
