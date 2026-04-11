@@ -65,7 +65,7 @@ export default function DashboardPage({
               <div className="relative flex h-40 w-40 items-center justify-center rounded-full border-8 border-yellow-400/20">
                 <div className="absolute inset-0 rounded-full border-8 border-yellow-400 border-t-transparent" style={{ transform: 'rotate(45deg)' }}></div>
                 <div className="text-center">
-                  <span className="text-4xl font-black">{totalScore}<span className="text-xl text-slate-400">/100</span></span>
+                  <span className="text-4xl font-black">{totalScore}<span className="text-xl text-slate-400">/150</span></span>
                 </div>
               </div>
               <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-yellow-100 px-4 py-1 text-sm font-bold text-yellow-700">
