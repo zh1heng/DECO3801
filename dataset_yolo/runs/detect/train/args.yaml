@@ -4,7 +4,7 @@ model: yolo11n.pt
 data: data.yaml
 epochs: 150
 time: null
-patience: 30
+patience: 100
 batch: 8
 imgsz: 1024
 save: true
