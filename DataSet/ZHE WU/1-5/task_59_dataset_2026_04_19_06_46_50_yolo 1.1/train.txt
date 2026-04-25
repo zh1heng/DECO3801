@@ -1,3 +1,0 @@
-data/obj_train_data/www.timeanddate.com/page_20260418_2209_001.png
-data/obj_train_data/www.timeanddate.com/page_20260418_2209_002.png
-data/obj_train_data/www.timeanddate.com/page_20260418_2209_003.png

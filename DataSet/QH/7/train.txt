@@ -1,7 +1,0 @@
-data/obj_train_data/page_20260424_1743_001.png
-data/obj_train_data/page_20260424_1743_002.png
-data/obj_train_data/page_20260424_1743_003.png
-data/obj_train_data/page_20260424_1743_004.png
-data/obj_train_data/page_20260424_1743_005.png
-data/obj_train_data/page_20260424_1743_006.png
-data/obj_train_data/page_20260424_1743_007.png

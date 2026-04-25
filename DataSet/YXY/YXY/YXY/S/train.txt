@@ -1,9 +1,0 @@
-data/obj_train_data/page_20260421_2144_001.png
-data/obj_train_data/page_20260421_2144_002.png
-data/obj_train_data/page_20260421_2144_003.png
-data/obj_train_data/page_20260421_2144_004.png
-data/obj_train_data/page_20260421_2144_005.png
-data/obj_train_data/page_20260421_2144_006.png
-data/obj_train_data/page_20260421_2144_007.png
-data/obj_train_data/page_20260421_2144_008.png
-

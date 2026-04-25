@@ -1,3 +1,0 @@
-data/obj_train_data/www.speedtest.net/page_20260418_2207_001.png
-data/obj_train_data/www.speedtest.net/page_20260418_2207_002.png
-data/obj_train_data/www.speedtest.net/page_20260418_2207_003.png

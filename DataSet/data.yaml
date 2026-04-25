@@ -1,8 +1,0 @@
-train: images/train
-val: images/val
-names:
-  0: Header
-  1: Navigation
-  2: MainContent
-  3: Secondary
-  4: Advertisement

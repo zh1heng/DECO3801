@@ -1,2 +1,0 @@
-data/obj_train_data/www.wikipedia.org/page_20260418_2212_001.png
-data/obj_train_data/www.wikipedia.org/page_20260418_2212_002.png
