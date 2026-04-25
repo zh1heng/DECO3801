@@ -1,6 +1,0 @@
-train: images/train
-val: images/val
-names:
-  0: Navigation
-  1: MainContent
-  2: Secondary
