@@ -2,6 +2,7 @@ import os
 import csv
 import shutil
 from pathlib import Path
+import cv2
 from ultralytics import YOLO
 
 def calculate_iou(box1, box2):
@@ -9,7 +10,6 @@ def calculate_iou(box1, box2):
     计算两个归一化边界框的 IoU
     box: [x_center, y_center, width, height]
     """
-    # 转换为 [x_min, y_min, x_max, y_max]
     b1_x1 = box1[0] - box1[2] / 2
     b1_y1 = box1[1] - box1[3] / 2
     b1_x2 = box1[0] + box1[2] / 2
@@ -41,7 +41,6 @@ def main():
     
     if not weights_path.exists():
         print(f"错误: 找不到模型权重文件: {weights_path}")
-        print("请检查 dataset_yolo 目录结构是否正确。")
         return
 
     # 加载模型
@@ -52,7 +51,7 @@ def main():
     output_dir = Path("suspicious_dataset")
     out_images_dir = output_dir / "images"
     out_labels_dir = output_dir / "labels"
-    out_preds_dir = output_dir / "predictions"
+    out_preds_dir = output_dir / "visualizations"  # 改名为可视化文件夹更准确
     
     # 自动创建目录
     for d in [out_images_dir, out_labels_dir, out_preds_dir]:
@@ -64,7 +63,6 @@ def main():
     total_checked = 0
     total_suspicious = 0
     
-    # 存放所有可疑数据的列表，用于后续排序
     results_list = []
 
     print("开始筛查数据集...")
@@ -73,10 +71,8 @@ def main():
         labels_dir = base_dir / "labels" / split
         
         if not images_dir.exists():
-            print(f"警告: 找不到目录 {images_dir}，已跳过")
             continue
             
-        # 遍历所有图片
         for img_path in images_dir.glob("*.*"):
             if img_path.suffix.lower() not in [".jpg", ".jpeg", ".png", ".bmp", ".webp"]:
                 continue
@@ -84,11 +80,10 @@ def main():
             total_checked += 1
             label_path = labels_dir / f"{img_path.stem}.txt"
             
-            # 运行模型推理 (verbose=False 避免控制台输出过多)
             results = model(str(img_path), verbose=False)
             result = results[0]
             
-            # 读取对应的 GT (Ground Truth)
+            # 读取 Ground Truth (人工原始标注)
             gt_classes = []
             gt_boxes = []
             if label_path.exists():
@@ -99,7 +94,7 @@ def main():
                             gt_classes.append(int(parts[0]))
                             gt_boxes.append([float(x) for x in parts[1:5]])
                             
-            # 提取预测结果
+            # 提取模型预测
             pred_classes = []
             pred_boxes = []
             pred_confs = []
@@ -114,19 +109,15 @@ def main():
             max_iou_overall = 0.0
             max_conf_overall = max(pred_confs) if pred_confs else 0.0
             
-            # 检查条件 1: 原始 label 有框，但模型完全没预测到
             if len(gt_boxes) > 0 and len(pred_boxes) == 0:
                 suspicious = True
                 reasons.add("gt_exist_pred_none")
                 
-            # 检查条件 4: 原始 label 为空但模型高置信度检测到目标 (conf > 0.7)
             if len(gt_boxes) == 0 and len(pred_boxes) > 0 and max_conf_overall > 0.7:
                 suspicious = True
                 reasons.add("gt_empty_pred_exist")
                 
-            # 当预测框和 GT 框都存在时，计算交并比 (IoU) 进行详细比对
             if len(gt_boxes) > 0 and len(pred_boxes) > 0:
-                # 遍历每个预测框，寻找匹配的 GT 框
                 for i, p_box in enumerate(pred_boxes):
                     p_cls = pred_classes[i]
                     p_conf = pred_confs[i]
@@ -143,33 +134,26 @@ def main():
                     if max_iou_for_pred > max_iou_overall:
                         max_iou_overall = max_iou_for_pred
                         
-                    # 检查条件 3: 预测框和原始框的最大 IoU < 0.5 (中/高风险)
                     if max_iou_for_pred < 0.5:
                         suspicious = True
                         reasons.add("low_iou")
                         
-                    # 检查条件 2: 置信度 conf > 0.7，且找到了重合框 (IoU >= 0.2)，但类别不一致
                     if p_conf > 0.7 and max_iou_for_pred >= 0.2 and p_cls != matched_gt_cls:
                         suspicious = True
                         reasons.add("class_mismatch")
                         
-                # 遍历每个 GT 框，检查是否有漏检 (该 GT 框与所有预测框的 IoU 都 < 0.5)
                 for j, g_box in enumerate(gt_boxes):
                     max_iou_for_gt = 0.0
                     for i, p_box in enumerate(pred_boxes):
                         iou = calculate_iou(p_box, g_box)
                         if iou > max_iou_for_gt:
                             max_iou_for_gt = iou
-                    
                     if max_iou_for_gt < 0.5:
                         suspicious = True
                         reasons.add("low_iou")
                         
-            # 如果判定为可疑数据，计算严重程度和优先级得分
             if suspicious:
                 total_suspicious += 1
-                
-                # 1. 判定 severity
                 severity = "low"
                 if "class_mismatch" in reasons or "gt_empty_pred_exist" in reasons:
                     severity = "high"
@@ -183,7 +167,6 @@ def main():
                 elif "gt_exist_pred_none" in reasons:
                     severity = "low"
 
-                # 4. 计算 priority_score
                 base_score = max_conf_overall * (1 - max_iou_overall)
                 priority_score = base_score
                 if "class_mismatch" in reasons:
@@ -204,18 +187,17 @@ def main():
                     "priority_score": priority_score,
                     "gt_classes": gt_classes,
                     "pred_classes": pred_classes,
+                    "gt_boxes": gt_boxes,
+                    "pred_boxes": pred_boxes,
+                    "pred_confs": pred_confs,
                     "max_iou_overall": max_iou_overall,
-                    "max_conf_overall": max_conf_overall,
-                    "result": result
+                    "max_conf_overall": max_conf_overall
                 })
 
-    # 6. 按 priority_score 从高到低排序
     results_list.sort(key=lambda x: x["priority_score"], reverse=True)
 
-    # 准备 CSV 报告并保存文件
     with open(report_path, "w", newline="", encoding="utf-8-sig") as csv_file:
         csv_writer = csv.writer(csv_file)
-        # 5. 写入表头
         csv_writer.writerow([
             "image_name", "split", "reason", "severity", 
             "priority_score", "gt_classes", "pred_classes", 
@@ -226,35 +208,50 @@ def main():
             img_path = item["img_path"]
             label_path = item["label_path"]
             
-            # 写入 CSV 记录
             csv_writer.writerow([
-                img_path.name,
-                item["split"],
-                item["reason_str"],
-                item["severity"],
-                f"{item['priority_score']:.4f}",
-                str(item["gt_classes"]),
-                str(item["pred_classes"]),
-                f"{item['max_iou_overall']:.4f}",
-                f"{item['max_conf_overall']:.4f}"
+                img_path.name, item["split"], item["reason_str"], item["severity"],
+                f"{item['priority_score']:.4f}", str(item["gt_classes"]), str(item["pred_classes"]),
+                f"{item['max_iou_overall']:.4f}", f"{item['max_conf_overall']:.4f}"
             ])
             
-            # 8. 复制图片和标签 (不自动删除)
             shutil.copy2(img_path, out_images_dir / img_path.name)
             if label_path.exists():
                 shutil.copy2(label_path, out_labels_dir / label_path.name)
                 
-            # 7. 保存带预测框的可视化图片，文件名包含 severity 和 reason
-            safe_reason = item["reason_str"].replace(" | ", "_").replace(" ", "_")
-            pred_filename = f"{item['severity']}_{safe_reason}_{img_path.name}"
-            pred_img_path = out_preds_dir / pred_filename
-            item["result"].save(filename=str(pred_img_path))
+            # 绘制对比图
+            img_cv = cv2.imread(str(img_path))
+            if img_cv is not None:
+                h, w, _ = img_cv.shape
+                
+                # 画你的原始标注 (绿色 GT)
+                for gt_cls, gt_box in zip(item["gt_classes"], item["gt_boxes"]):
+                    x_c, y_c, bw, bh = gt_box
+                    x1, y1 = int((x_c - bw/2)*w), int((y_c - bh/2)*h)
+                    x2, y2 = int((x_c + bw/2)*w), int((y_c + bh/2)*h)
+                    cv2.rectangle(img_cv, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(img_cv, f"GT:{gt_cls}", (x1, max(15, y1 - 5)), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
+                # 画模型预测 (红色 Pred)
+                for p_cls, p_conf, p_box in zip(item["pred_classes"], item["pred_confs"], item["pred_boxes"]):
+                    # 仅画出置信度大于 0.25 的预测框，避免杂乱
+                    if p_conf > 0.25:
+                        x_c, y_c, bw, bh = p_box
+                        x1, y1 = int((x_c - bw/2)*w), int((y_c - bh/2)*h)
+                        x2, y2 = int((x_c + bw/2)*w), int((y_c + bh/2)*h)
+                        cv2.rectangle(img_cv, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                        cv2.putText(img_cv, f"Pred:{p_cls}({p_conf:.2f})", (x1, min(h-5, y2 + 20)), 
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+                safe_reason = item["reason_str"].replace(" | ", "_").replace(" ", "_")
+                pred_filename = f"{item['severity']}_{safe_reason}_{img_path.name}"
+                cv2.imwrite(str(out_preds_dir / pred_filename), img_cv)
 
     print("\n" + "="*40)
-    print("筛查及分析完成！")
-    print(f"共检查图片: {total_checked} 张")
-    print(f"发现可疑图片: {total_suspicious} 张")
-    print(f"报告已按优先度得分排序，结果保存在:\n {output_dir.absolute()}")
+    print("筛查完成！")
+    print(f"在 {total_checked} 张图片中，找到了 {total_suspicious} 张可疑数据。")
+    print(f"请去 {out_preds_dir} 文件夹查看对比图。")
+    print("图中：[绿色框] 为你的原始人工标注，[红色框] 为模型预测。")
     print("="*40)
 
 if __name__ == "__main__":
