@@ -35,6 +35,8 @@ def calculate_iou(box1, box2):
     return inter_area / union_area
 
 def main():
+    target_class_name = "Navigation"  # 在这里指定你想单独筛选和对比的类别（例如 "Navigation"），设为 None 则检查所有类
+
     # 路径配置
     base_dir = Path("dataset_yolo")
     weights_path = base_dir / "runs" / "detect" / "train" / "weights" / "best.pt"
@@ -47,17 +49,30 @@ def main():
     print(f"正在加载模型: {weights_path}")
     model = YOLO(str(weights_path))
 
+    target_class_id = None
+    if target_class_name is not None:
+        for cls_id, cls_name in model.names.items():
+            if cls_name == target_class_name:
+                target_class_id = cls_id
+                break
+        if target_class_id is None:
+            print(f"警告: 模型类别中未找到 '{target_class_name}'。将展示所有类别。")
+            print(f"模型包含的类别: {model.names}")
+            target_class_name = None
+
     # 输出目录配置
     output_dir = Path("suspicious_dataset")
     out_images_dir = output_dir / "images"
     out_labels_dir = output_dir / "labels"
     out_preds_dir = output_dir / "visualizations"  # 改名为可视化文件夹更准确
+    out_txt_dir = output_dir / "txt_comparisons"   # 存放独立的 txt 对比文件
     
     # 自动创建目录
-    for d in [out_images_dir, out_labels_dir, out_preds_dir]:
+    for d in [out_images_dir, out_labels_dir, out_preds_dir, out_txt_dir]:
         d.mkdir(parents=True, exist_ok=True)
 
     report_path = output_dir / "report.csv"
+
     splits = ["train", "val"]
     
     total_checked = 0
@@ -103,6 +118,20 @@ def main():
                     pred_classes.append(int(box.cls[0].item()))
                     pred_confs.append(float(box.conf[0].item()))
                     pred_boxes.append(box.xywhn[0].tolist())
+                    
+            # 过滤指定类别
+            if target_class_id is not None:
+                gt_filtered = [(c, b) for c, b in zip(gt_classes, gt_boxes) if c == target_class_id]
+                gt_classes = [x[0] for x in gt_filtered]
+                gt_boxes = [x[1] for x in gt_filtered]
+                
+                pred_filtered = [(c, conf, b) for c, conf, b in zip(pred_classes, pred_confs, pred_boxes) if c == target_class_id]
+                pred_classes = [x[0] for x in pred_filtered]
+                pred_confs = [x[1] for x in pred_filtered]
+                pred_boxes = [x[2] for x in pred_filtered]
+                
+                if len(gt_classes) == 0 and len(pred_classes) == 0:
+                    continue  # 该图没有目标类别，跳过
                     
             suspicious = False
             reasons = set()
@@ -177,7 +206,6 @@ def main():
                     priority_score += 0.5
                     
                 reason_str = " | ".join(reasons)
-                
                 results_list.append({
                     "img_path": img_path,
                     "label_path": label_path,
@@ -214,9 +242,13 @@ def main():
                 f"{item['max_iou_overall']:.4f}", f"{item['max_conf_overall']:.4f}"
             ])
             
-            shutil.copy2(img_path, out_images_dir / img_path.name)
+            safe_reason = item["reason_str"].replace(" | ", "_").replace(" ", "_")
+            new_img_name = f"{item['severity']}_{safe_reason}_{img_path.name}"
+            
+            shutil.copy2(img_path, out_images_dir / new_img_name)
             if label_path.exists():
-                shutil.copy2(label_path, out_labels_dir / label_path.name)
+                new_label_name = f"{item['severity']}_{safe_reason}_{label_path.name}"
+                shutil.copy2(label_path, out_labels_dir / new_label_name)
                 
             # 绘制对比图
             img_cv = cv2.imread(str(img_path))
@@ -243,13 +275,33 @@ def main():
                         cv2.putText(img_cv, f"Pred:{p_cls}({p_conf:.2f})", (x1, min(h-5, y2 + 20)), 
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
-                safe_reason = item["reason_str"].replace(" | ", "_").replace(" ", "_")
-                pred_filename = f"{item['severity']}_{safe_reason}_{img_path.name}"
-                cv2.imwrite(str(out_preds_dir / pred_filename), img_cv)
+                cv2.imwrite(str(out_preds_dir / new_img_name), img_cv)
+
+            # 写入独立的 txt 比较文件 (同 visualizations 一样的前缀排序)
+            txt_filename = f"{item['severity']}_{safe_reason}_{img_path.stem}.txt"
+            txt_compare_file = out_txt_dir / txt_filename
+            with open(txt_compare_file, "w", encoding="utf-8") as f:
+                f.write(f"文件: {img_path.name} | 数据集: {item['split']} | 异常原因: {item['reason_str']}\n")
+                f.write(f"=== {target_class_name if target_class_name else '所有类别'} 标注数据 txt 比较 ===\n\n")
+                f.write("  [人工标注 GT]:\n")
+                if not item["gt_boxes"]:
+                    f.write("    无\n")
+                else:
+                    for c, b in zip(item["gt_classes"], item["gt_boxes"]):
+                        c_name = model.names.get(c, str(c))
+                        f.write(f"    类名: {c_name}, 坐标: {b}\n")
+                f.write("\n  [模型预测 Pred]:\n")
+                if not item["pred_boxes"]:
+                    f.write("    无\n")
+                else:
+                    for c, conf, b in zip(item["pred_classes"], item["pred_confs"], item["pred_boxes"]):
+                        c_name = model.names.get(c, str(c))
+                        f.write(f"    类名: {c_name}, 置信度: {conf:.4f}, 坐标: {b}\n")
 
     print("\n" + "="*40)
     print("筛查完成！")
     print(f"在 {total_checked} 张图片中，找到了 {total_suspicious} 张可疑数据。")
+    print(f"请去 {out_txt_dir} 文件夹查看每个图片的 txt 标注比对数据。")
     print(f"请去 {out_preds_dir} 文件夹查看对比图。")
     print("图中：[绿色框] 为你的原始人工标注，[红色框] 为模型预测。")
     print("="*40)
